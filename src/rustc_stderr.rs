@@ -16,7 +16,7 @@ struct RustcMessage {
 }
 
 #[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub(crate) enum Level {
+pub enum Level {
     Ice = 5,
     Error = 4,
     Warn = 3,
@@ -27,7 +27,7 @@ pub(crate) enum Level {
 }
 
 #[derive(Debug)]
-pub(crate) struct Message {
+pub struct Message {
     pub(crate) level: Level,
     pub(crate) message: String,
 }
@@ -85,7 +85,10 @@ impl RustcMessage {
         line: Option<usize>,
     ) {
         let line = self.line(file).or(line);
-        let msg = Message { level: self.level.parse().unwrap(), message: self.message };
+        let msg = Message {
+            level: self.level.parse().unwrap(),
+            message: self.message,
+        };
         if let Some(line) = line {
             if messages.len() <= line {
                 messages.resize_with(line + 1, Vec::new);
@@ -143,13 +146,19 @@ pub(crate) fn process(file: &Path, stderr: &[u8]) -> Diagnostics {
                         None,
                     );
                 }
-                Err(err) =>
-                    panic!("failed to parse rustc JSON output at line: {}\nerr:{}", line, err),
+                Err(err) => panic!(
+                    "failed to parse rustc JSON output at line: {}\nerr:{}",
+                    line, err
+                ),
             }
         } else {
             // FIXME: do we want to throw interpreter stderr into a separate file?
             writeln!(rendered, "{}", line).unwrap();
         }
     }
-    Diagnostics { rendered, messages, messages_from_unknown_file_or_line }
+    Diagnostics {
+        rendered,
+        messages,
+        messages_from_unknown_file_or_line,
+    }
 }
