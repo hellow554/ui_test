@@ -414,7 +414,7 @@ impl CommentParser<Comments> {
                     };
                     self.errors.push(Error::InvalidComment {
                         msg: format!(
-                            "//~v pattern is trying to refer to line {}, but the file only has {} lines",
+                            ";~v pattern is trying to refer to line {}, but the file only has {} lines",
                             m.line.get(),
                             last_line,
                         ),
@@ -489,15 +489,15 @@ impl CommentParser<Comments> {
         line: Spanned<&[u8]>,
     ) -> std::result::Result<ParsePatternResult, Spanned<Utf8Error>> {
         let mut res = ParsePatternResult::Other;
-        if let Some(command) = line.strip_prefix(b"//@") {
+        if let Some(command) = line.strip_prefix(b";@") {
             self.parse_command(command.to_str()?.trim())
-        } else if let Some((_, pattern)) = line.split_once_str("//~") {
+        } else if let Some((_, pattern)) = line.split_once_str(";~") {
             let (revisions, pattern) = self.parse_revisions(pattern.to_str()?);
             self.revisioned(revisions, |this| {
                 res = this.parse_pattern(pattern, fallthrough_to);
             })
         } else {
-            for pos in line.clone().find_iter("//") {
+            for pos in line.clone().find_iter(";") {
                 let (_, rest) = line.clone().to_str()?.split_at(pos + 2);
                 for rest in std::iter::once(rest.clone()).chain(rest.strip_prefix(" ")) {
                     let c = rest.chars().next();
@@ -510,8 +510,8 @@ impl CommentParser<Comments> {
                             span,
                             format!(
                                 "comment looks suspiciously like a test suite command: `{}`\n\
-                             All `//@` test suite commands must be at the start of the line.\n\
-                             The `//` must be directly followed by `@` or `~`.",
+                             All `;@` test suite commands must be at the start of the line.\n\
+                             The `;` must be directly followed by `@` or `~`.",
                                 *rest,
                             ),
                         );
@@ -931,7 +931,7 @@ impl CommentParser<&mut Revisioned> {
                     }
                     _ => {
                         self.error(pattern.span(), format!(
-                            "//~^ pattern is trying to refer to {} lines above, but there are only {} lines above",
+                            ";~^ pattern is trying to refer to {} lines above, but there are only {} lines above",
                             offset,
                             pattern.line().get() - 1,
                         ));
@@ -964,7 +964,7 @@ impl CommentParser<&mut Revisioned> {
                         // The line count of the file is not yet known so we can only check
                         // if the resulting line is in the range of a usize.
                         self.error(pattern.span(), format!(
-                            "//~v pattern is trying to refer to {} lines below, which is more than ui_test can count",
+                            ";~v pattern is trying to refer to {} lines below, which is more than ui_test can count",
                             offset,
                         ));
                         return ParsePatternResult::ErrorBelow {
